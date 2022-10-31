@@ -3,7 +3,12 @@
   "description": "get twitter images and videos",
   "author": {
     "name": "TEDIORELEE",
-    "email": "tediorelee@gmail.com"
+    "email": "tediorelee@gmail.com",
+    "url": "https://github.com/tediorelee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tediorelee/koishi-plugin-twitter-images-videos.git"
   },
   "private": true,
   "version": "1.0.0",
