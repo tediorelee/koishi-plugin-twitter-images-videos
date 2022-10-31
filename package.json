@@ -10,8 +10,8 @@
     "type": "git",
     "url": "git+https://github.com/tediorelee/koishi-plugin-twitter-images-videos.git"
   },
-  "private": true,
-  "version": "1.0.0",
+  "private": false,
+  "version": "1.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
