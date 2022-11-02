@@ -16,6 +16,7 @@ export const Config = Schema.object({
 
 export const FILE_TYPE_PHOTO = 'photo';
 export const FILE_TYPE_VIDEO = 'video';
+export const FILE_TYPE_GIF = 'animated_gif';
 export const FILE_CONTENT_TYPE_VIDEO = 'video/mp4';
 
 const apiEndpointPrefix = 'https://api.twitter.com/1.1/statuses/show.json?id=';
@@ -40,22 +41,26 @@ export function apply(ctx: Context, config: Config) {
         return '包含敏感内容，暂不解析!';
       }
       const { extended_entities: { media } } = result;
+      const text = result.text.replace(/(?:https?|ftp):\/\/[\n\S]+/g, '') || ''; //tweet desc
+      const user = result.user; //user info obj
       media.forEach(async item => {
         if (item.type === FILE_TYPE_PHOTO) {
           const img = await ctx.http.get<ArrayBuffer>(item.media_url_https, {
             responseType: 'arraybuffer',
           })
-          await session.sendQueued(segment.image(img))
+          await session.sendQueued(`@${user.screen_name}: ${text} ${segment.image(img)}`)
         } else if (item.type === FILE_TYPE_VIDEO) {
           const videos = item.video_info.variants.filter(v => v.content_type === FILE_CONTENT_TYPE_VIDEO);
           const maxBitrate = Math.max.apply(Math, videos.map(video => { return video.bitrate }));
           const bestQualityVideo = videos.find(v => v.bitrate === maxBitrate)?.url;
           await session.sendQueued(segment.video(bestQualityVideo))
+        } else if (item.type === FILE_TYPE_GIF) {
+          await session.sendQueued(segment.video(item.video_info.variants[0].url))
         }
       });
     } catch(err) {
       console.log(err);
-      return `错误！暂不支持解析同时包含图片和视频的动态;  ${err}`;
+      return `发生错误!;  ${err}`;
     }
     return next();
   })
