@@ -40,24 +40,30 @@ export function apply(ctx: Context, config: Config) {
       if (result.possibly_sensitive && !config.allowNudity) {
         return '包含敏感内容，暂不解析!';
       }
-      const { extended_entities: { media } } = result;
-      const text = result.text.replace(/(?:https?|ftp):\/\/[\n\S]+/g, '') || ''; //tweet desc
-      const user = result.user; //user info obj
-      media.forEach(async item => {
-        if (item.type === FILE_TYPE_PHOTO) {
-          const img = await ctx.http.get<ArrayBuffer>(item.media_url_https, {
-            responseType: 'arraybuffer',
-          })
-          await session.sendQueued(`@${user.screen_name}: ${text} ${segment.image(img)}`)
-        } else if (item.type === FILE_TYPE_VIDEO) {
-          const videos = item.video_info.variants.filter(v => v.content_type === FILE_CONTENT_TYPE_VIDEO);
-          const maxBitrate = Math.max.apply(Math, videos.map(video => { return video.bitrate }));
-          const bestQualityVideo = videos.find(v => v.bitrate === maxBitrate)?.url;
-          await session.sendQueued(segment.video(bestQualityVideo))
-        } else if (item.type === FILE_TYPE_GIF) {
-          await session.sendQueued(segment.video(item.video_info.variants[0].url))
-        }
-      });
+
+      if (result.truncated) {
+        const desc = result.text;
+        return `暂时无法解析此类型的twitter post.\n${desc}`;
+      } else {
+        const { extended_entities: { media } } = result;
+        const text = result.text.replace(/(?:https?|ftp):\/\/[\n\S]+/g, '') || ''; //tweet desc
+        const user = result.user; //user info obj
+        media.forEach(async item => {
+          if (item.type === FILE_TYPE_PHOTO) {
+            const img = await ctx.http.get<ArrayBuffer>(item.media_url_https, {
+              responseType: 'arraybuffer',
+            })
+            await session.sendQueued(`@${user.screen_name}: ${text} ${segment.image(img)}`)
+          } else if (item.type === FILE_TYPE_VIDEO) {
+            const videos = item.video_info.variants.filter(v => v.content_type === FILE_CONTENT_TYPE_VIDEO);
+            const maxBitrate = Math.max.apply(Math, videos.map(video => { return video.bitrate }));
+            const bestQualityVideo = videos.find(v => v.bitrate === maxBitrate)?.url;
+            await session.sendQueued(segment.video(bestQualityVideo))
+          } else if (item.type === FILE_TYPE_GIF) {
+            await session.sendQueued(segment.video(item.video_info.variants[0].url))
+          }
+        });
+      }
     } catch(err) {
       console.log(err);
       return `发生错误!;  ${err}`;
